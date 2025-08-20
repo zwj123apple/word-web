@@ -43,7 +43,7 @@ export const useVocabulary = () => {
   const fetchWords = useCallback(async (bank, page, limit) => {
     setIsLoading(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+      const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001/api';
       const response = await fetch(`${API_BASE_URL}/word-data?bank=${bank}&page=${page}&limit=${limit}`);
       const data = await response.json();
       if (data.length === 0) {
@@ -67,7 +67,7 @@ export const useVocabulary = () => {
   const loadMoreWords = () => {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchWords(selectedBank, nextPage, dailyGoal);
+    fetchWords(selectedBank, nextPage, debouncedDailyGoal);
   };
 
   const currentWord = words[currentWordIndex] || words[0];
@@ -164,8 +164,6 @@ export const useVocabulary = () => {
     selectedBank,
     setSelectedBank,
     dailyGoal,
-    setDailyGoal,
-    setDailyGoal,
     setDailyGoal,
     currentWordIndex,
     words,
