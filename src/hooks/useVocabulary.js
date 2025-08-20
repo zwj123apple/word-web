@@ -1,7 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import cet4Data from "../data/cet4.json";
-import cet6Data from "../data/cet6.json";
-import gaokaoData from "../data/gaokao.json";
 
 const wordBanks = {
   cet4: { name: "CET-4", count: 3849 },
@@ -18,18 +15,18 @@ function shuffleArray(arr) {
   return newArr;
 }
 
-const wordDatabase = {
-  cet4: shuffleArray(cet4Data),
-  cet6: shuffleArray(cet6Data),
-  gaokao: shuffleArray(gaokaoData),
-};
+import { useDebounce } from "./useDebounce";
 
 export const useVocabulary = () => {
+  const [isLoading, setIsLoading] = useState(true);
   const [currentMode, setCurrentMode] = useState("learn");
   const [selectedBank, setSelectedBank] = useState("cet4");
   const [dailyGoal, setDailyGoal] = useState(30);
+  const debouncedDailyGoal = useDebounce(dailyGoal, 500); // 500ms debounce delay
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const [words, setWords] = useState(wordDatabase.cet4);
+  const [words, setWords] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [userAnswer, setUserAnswer] = useState("");
   const [showAnswer, setShowAnswer] = useState(false);
   const [studyStats, setStudyStats] = useState({
@@ -43,13 +40,42 @@ export const useVocabulary = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [showResult, setShowResult] = useState(false);
 
+  const fetchWords = useCallback(async (bank, page, limit) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/word-data?bank=${bank}&page=${page}&limit=${limit}`);
+      const data = await response.json();
+      if (data.length === 0) {
+        setHasMore(false);
+      }
+      setWords(prevWords => page === 1 ? shuffleArray(data) : shuffleArray([...prevWords, ...data]));
+    } catch (error) {
+      console.error("Error fetching word data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setWords([]);
+    setPage(1);
+    setHasMore(true);
+    fetchWords(selectedBank, 1, debouncedDailyGoal);
+  }, [selectedBank, debouncedDailyGoal, fetchWords]);
+
+  const loadMoreWords = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchWords(selectedBank, nextPage, dailyGoal);
+  };
+
   const currentWord = words[currentWordIndex] || words[0];
 
   useEffect(() => {
-    const newWords = wordDatabase[selectedBank] || wordDatabase.cet4;
-    setWords(newWords);
-    setCurrentWordIndex(0);
-  }, [selectedBank]);
+    if (currentWordIndex >= words.length - 10 && hasMore && !isLoading) {
+      loadMoreWords();
+    }
+  }, [currentWordIndex, words.length, hasMore, isLoading, loadMoreWords]);
 
   const speakWord = useCallback((text) => {
     if ("speechSynthesis" in window) {
@@ -138,6 +164,8 @@ export const useVocabulary = () => {
     setSelectedBank,
     dailyGoal,
     setDailyGoal,
+    setDailyGoal,
+    setDailyGoal,
     currentWordIndex,
     words,
     userAnswer,
@@ -154,5 +182,8 @@ export const useVocabulary = () => {
     nextWord,
     markFamiliarity,
     wordBanks,
+    isLoading,
+    loadMoreWords,
+    hasMore,
   };
 };

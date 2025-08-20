@@ -32,7 +32,27 @@ const VocabularyApp = () => {
     nextWord,
     markFamiliarity,
     wordBanks,
+    isLoading,
+    loadMoreWords,
+    hasMore,
   } = useVocabulary();
+
+  if (isLoading && words.length === 0) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          fontSize: "2rem",
+          color: "#666",
+        }}
+      >
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -76,6 +96,8 @@ const VocabularyApp = () => {
           />
         )}
       </div>
+
+      
 
       <SettingsPanel
         wordBanks={wordBanks}

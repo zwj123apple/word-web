@@ -16,14 +16,28 @@ mongoose
   .catch((err) => console.error("MongoDB 连接失败:", err));
 
 // 核心接口：获取所有考试数据
+const cache = {};
+
 app.get("/api/word-data", async (req, res) => {
   try {
-    const collections = ["cet4", "cet6", "gaokao"];
-    const result = {};
-    for (const collName of collections) {
-      const collection = mongoose.connection.collection(collName);
-      result[collName] = await collection.find({}).toArray();
+    const { bank, page = 1, limit = 100 } = req.query;
+    if (!bank) {
+      return res.status(400).json({ error: "bank is required" });
     }
+
+    const cacheKey = `${bank}-${page}-${limit}`;
+    if (cache[cacheKey]) {
+      return res.status(200).json(cache[cacheKey]);
+    }
+
+    const collection = mongoose.connection.collection(bank);
+    const result = await collection.find({}).skip((page - 1) * limit).limit(parseInt(limit)).toArray();
+
+    cache[cacheKey] = result;
+    setTimeout(() => {
+      delete cache[cacheKey];
+    }, 3600000); // 1 hour cache
+
     res.status(200).json(result);
   } catch (error) {
     console.error("获取数据失败:", error);

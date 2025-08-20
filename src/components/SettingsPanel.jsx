@@ -24,6 +24,7 @@ const SettingsPanel = ({
               </option>
             ))}
           </select>
+          
           <input
             type="number"
             min="10"
