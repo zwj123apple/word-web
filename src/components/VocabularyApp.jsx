@@ -35,7 +35,30 @@ const VocabularyApp = () => {
     isLoading,
     loadMoreWords,
     hasMore,
+    error,
   } = useVocabulary();
+
+  if (error) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          fontSize: "1.5rem",
+          color: "#d32f2f",
+          textAlign: "center",
+          padding: "20px",
+        }}
+      >
+        <p>Error loading vocabulary data:</p>
+        <p>{error.message}</p>
+        <p>Please try again later or check your network connection.</p>
+      </div>
+    );
+  }
 
   if (isLoading && words.length === 0) {
     return (

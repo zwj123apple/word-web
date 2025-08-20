@@ -39,12 +39,17 @@ export const useVocabulary = () => {
   const [quizOptions, setQuizOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState(null);
   const [showResult, setShowResult] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchWords = useCallback(async (bank, page, limit) => {
     setIsLoading(true);
+    setError(null);
     try {
       const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001/api';
       const response = await fetch(`${API_BASE_URL}/word-data?bank=${bank}&page=${page}&limit=${limit}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
       const data = await response.json();
       if (data.length === 0) {
         setHasMore(false);
@@ -52,6 +57,7 @@ export const useVocabulary = () => {
       setWords(prevWords => page === 1 ? shuffleArray(data) : shuffleArray([...prevWords, ...data]));
     } catch (error) {
       console.error("Error fetching word data:", error);
+      setError(error);
     } finally {
       setIsLoading(false);
     }
