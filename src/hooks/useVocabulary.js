@@ -43,7 +43,8 @@ export const useVocabulary = () => {
   const fetchWords = useCallback(async (bank, page, limit) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/word-data?bank=${bank}&page=${page}&limit=${limit}`);
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+      const response = await fetch(`${API_BASE_URL}/word-data?bank=${bank}&page=${page}&limit=${limit}`);
       const data = await response.json();
       if (data.length === 0) {
         setHasMore(false);
