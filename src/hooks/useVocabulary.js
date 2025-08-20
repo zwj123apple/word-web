@@ -45,16 +45,20 @@ export const useVocabulary = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001/api';
-      const response = await fetch(`${API_BASE_URL}/word-data?bank=${bank}&page=${page}&limit=${limit}`);
+      const API_BASE_URL = "/api";
+      const response = await fetch(
+        `${API_BASE_URL}/word-data?bank=${bank}&page=${page}&limit=${limit}`
+      );
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error("Network response was not ok");
       }
       const data = await response.json();
       if (data.length === 0) {
         setHasMore(false);
       }
-      setWords(prevWords => page === 1 ? shuffleArray(data) : shuffleArray([...prevWords, ...data]));
+      setWords((prevWords) =>
+        page === 1 ? shuffleArray(data) : shuffleArray([...prevWords, ...data])
+      );
     } catch (error) {
       console.error("Error fetching word data:", error);
       setError(error);
