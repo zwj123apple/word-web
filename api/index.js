@@ -31,8 +31,16 @@ app.get("/api/word-data", async (req, res) => {
       return res.status(200).json(cache[cacheKey]);
     }
 
-    const collection = mongoose.connection.collection(bank);
-    const result = await collection.find({}).skip((page - 1) * limit).limit(parseInt(limit)).toArray();
+    // Define a generic schema if you don't have a specific one for each bank
+    const dynamicSchema = new mongoose.Schema({}, { strict: false });
+    // Get or create the model for the specific bank (collection)
+    const DynamicModel = mongoose.models[bank] || mongoose.model(bank, dynamicSchema, bank);
+
+    const result = await DynamicModel.find({})
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .lean()
+      .exec();
 
     cache[cacheKey] = result;
     setTimeout(() => {
