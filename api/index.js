@@ -13,14 +13,26 @@ app.use(express.json());
 // 数据库连接优化 - 避免重复连接
 let dbConnection;
 const connectDB = async () => {
-  if (dbConnection) return dbConnection;
+  if (dbConnection) {
+    console.log("使用已存在的数据库连接");
+    return dbConnection;
+  }
   try {
-    dbConnection = await mongoose.connect(process.env.MONGODB_URI);
-    console.log("MongoDB连接成功");
+    console.log("开始连接数据库...");
+    dbConnection = await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000, // 缩短超时时间，快速暴露问题
+      bufferCommands: false, // 禁用命令缓冲
+    });
+    console.log("MongoDB连接成功，数据库名称：", dbConnection.connection.name);
     return dbConnection;
   } catch (err) {
-    console.error("MongoDB连接失败:", err);
-    throw err; // 抛出错误让路由处理
+    console.error(
+      "MongoDB连接失败（详细错误）:",
+      err.message,
+      "错误码:",
+      err.code
+    );
+    throw err;
   }
 };
 
@@ -80,7 +92,7 @@ app.get("/api/word-data", async (req, res) => {
     cache[cacheKey] = result;
     setTimeout(() => {
       delete cache[cacheKey];
-    }, 3600000); // 1小时缓存
+    }, 0); // 1小时缓存
 
     // 返回结果
     res.status(200).json({
