@@ -79,16 +79,19 @@ const VocabularyApp = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <Header studyStats={studyStats} dailyGoal={dailyGoal} />
-
-      <ModeSwitcher currentMode={currentMode} setCurrentMode={setCurrentMode} />
+      <Header
+        studyStats={studyStats}
+        dailyGoal={dailyGoal}
+        currentMode={currentMode}
+        setCurrentMode={setCurrentMode}
+      />
 
       <ProgressBar
         currentWordIndex={currentWordIndex}
         totalWords={words.length}
       />
 
-      <div className="pb-8">
+      <div className="pb-6">
         {currentMode === "learn" && (
           <LearnMode
             currentWord={currentWord}
@@ -119,8 +122,6 @@ const VocabularyApp = () => {
           />
         )}
       </div>
-
-      
 
       <SettingsPanel
         wordBanks={wordBanks}

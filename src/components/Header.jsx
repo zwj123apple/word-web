@@ -1,15 +1,22 @@
 import React from "react";
 import { Brain, Target, Trophy, Star } from "lucide-react";
+import ModeSwitcher from "./ModeSwitcher";
 
-const Header = ({ studyStats, dailyGoal }) => {
+
+const Header = ({ studyStats, dailyGoal, currentMode, setCurrentMode }) => {
+
   return (
     <nav className="bg-white shadow-sm border-b">
       <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Brain className="w-8 h-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-800">AI背单词</h1>
+            <h1 className="text-xl font-bold text-gray-800">AI背单词</h1>
           </div>
+
+          
+
+          <ModeSwitcher currentMode={currentMode} setCurrentMode={setCurrentMode} />
 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4">

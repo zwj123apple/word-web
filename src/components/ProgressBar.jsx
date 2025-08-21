@@ -1,8 +1,8 @@
-import React from 'react';
+import React from "react";
 
 const ProgressBar = ({ currentWordIndex, totalWords }) => {
   return (
-    <div className="max-w-2xl mx-auto mb-8">
+    <div className="max-w-2xl mx-auto mb-6 mt-6">
       <div className="bg-white rounded-2xl p-6 shadow-lg">
         <div className="flex items-center justify-between mb-4">
           <span className="text-sm text-gray-600">学习进度</span>

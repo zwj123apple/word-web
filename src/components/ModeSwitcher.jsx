@@ -9,9 +9,7 @@ const ModeSwitcher = ({ currentMode, setCurrentMode }) => {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
-      <div className="flex justify-center mb-8">
-        <div className="bg-white rounded-2xl p-2 shadow-lg">
+    <div className="bg-white rounded-2xl p-2 shadow-lg">
           <div className="flex gap-2">
             {modes.map(({ mode, icon: Icon, label }) => (
               <button
@@ -29,9 +27,7 @@ const ModeSwitcher = ({ currentMode, setCurrentMode }) => {
             ))}
           </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default ModeSwitcher;
