@@ -7,6 +7,7 @@ import LearnMode from "./LearnMode";
 import QuizMode from "./QuizMode";
 import SpellingMode from "./SpellingMode";
 import SettingsPanel from "./SettingsPanel";
+import Pagination from "./Pagination";
 
 const VocabularyApp = () => {
   const {
@@ -18,6 +19,9 @@ const VocabularyApp = () => {
     setDailyGoal,
     currentWordIndex,
     words,
+    page,
+    setPage,
+    totalPages,
     userAnswer,
     setUserAnswer,
     showAnswer,
@@ -33,7 +37,6 @@ const VocabularyApp = () => {
     markFamiliarity,
     wordBanks,
     isLoading,
-    loadMoreWords,
     hasMore,
     error,
   } = useVocabulary();
@@ -121,6 +124,7 @@ const VocabularyApp = () => {
             speakWord={speakWord}
           />
         )}
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       <SettingsPanel

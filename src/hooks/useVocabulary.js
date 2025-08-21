@@ -40,6 +40,7 @@ export const useVocabulary = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [showResult, setShowResult] = useState(false);
   const [error, setError] = useState(null);
+  const [totalPages, setTotalPages] = useState(1);
 
   const fetchWords = useCallback(async (bank, page, limit) => {
     setIsLoading(true);
@@ -57,10 +58,8 @@ export const useVocabulary = () => {
       if (data.length === 0) {
         setHasMore(false);
       }
-      setWords((prevWords) =>
-        page === 1 ? shuffleArray(data) : shuffleArray([...prevWords, ...data])
-      );
-      console.log(words);
+      setWords(shuffleArray(data));
+      setCurrentWordIndex(0);
     } catch (error) {
       console.error("Error fetching word data:", error);
       setError(error);
@@ -70,25 +69,21 @@ export const useVocabulary = () => {
   }, []);
 
   useEffect(() => {
-    setWords([]);
-    setPage(1);
-    setHasMore(true);
-    fetchWords(selectedBank, 1, debouncedDailyGoal);
-  }, [selectedBank, debouncedDailyGoal, fetchWords]);
-
-  const loadMoreWords = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchWords(selectedBank, nextPage, debouncedDailyGoal);
-  };
-
-  const currentWord = words[currentWordIndex] || words[0];
+    if (wordBanks[selectedBank]) {
+      const count = wordBanks[selectedBank].count;
+      const pages = Math.ceil(count / debouncedDailyGoal);
+      setTotalPages(pages);
+    }
+    setPage(1); // Reset to page 1 when bank or goal changes
+  }, [selectedBank, debouncedDailyGoal]);
 
   useEffect(() => {
-    if (currentWordIndex >= words.length - 10 && hasMore && !isLoading) {
-      loadMoreWords();
-    }
-  }, [currentWordIndex, words.length, hasMore, isLoading, loadMoreWords]);
+    fetchWords(selectedBank, page, debouncedDailyGoal);
+  }, [page, selectedBank, debouncedDailyGoal, fetchWords]);
+
+  
+
+  const currentWord = words[currentWordIndex] || words[0];
 
   const speakWord = useCallback((text) => {
     if ("speechSynthesis" in window) {
@@ -142,7 +137,9 @@ export const useVocabulary = () => {
   };
 
   const nextWord = () => {
-    setCurrentWordIndex((prev) => (prev + 1) % words.length);
+    if (currentWordIndex < words.length - 1) {
+      setCurrentWordIndex((prev) => prev + 1);
+    }
     setShowAnswer(false);
     setShowResult(false);
     setSelectedOption(null);
@@ -179,6 +176,9 @@ export const useVocabulary = () => {
     setDailyGoal,
     currentWordIndex,
     words,
+    page,
+    setPage,
+    totalPages,
     userAnswer,
     setUserAnswer,
     showAnswer,
@@ -194,7 +194,6 @@ export const useVocabulary = () => {
     markFamiliarity,
     wordBanks,
     isLoading,
-    loadMoreWords,
     hasMore,
   };
 };
