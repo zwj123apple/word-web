@@ -1,36 +1,6 @@
 // scripts/fetchExamples.js
 const DictionaryService = require("./services/dictionaryService");
 
-// 四级核心单词列表（示例）
-const CET4_CORE_WORDS = [
-  "abandon",
-  "ability",
-  "able",
-  "about",
-  "above",
-  "abroad",
-  "absence",
-  "absolute",
-  "absorb",
-  "abstract",
-  "abuse",
-  "academic",
-  "accept",
-  "access",
-  "accident",
-  "accompany",
-  "accomplish",
-  "accord",
-  "account",
-  "accurate",
-  "accuse",
-  "achieve",
-  "acquire",
-  "across",
-  "action",
-  // ... 更多单词
-];
-
 async function main() {
   //   const service = new DictionaryService(
   //     'mongodb://localhost:27017', // 你的MongoDB连接字符串
@@ -42,24 +12,30 @@ async function main() {
   );
   try {
     await service.connect();
+    // 测试获取统计信息
+    const collections = ["gaokao"];
+    // for (const collection of collections) {
+    //   try {
+    //     const words = await service.getAllWordsFromCollection(collection);
+    //     for (w of words) {
+    //       const wordData = await service.fetchWordFromAPI(w.word);
+    //       const sentence = wordData.examples[0].sentence;
 
-    console.log(`开始处理 ${CET4_CORE_WORDS.length} 个四级核心单词...`);
-
-    const results = await service.processWords(CET4_CORE_WORDS, 8);
-
-    console.log("\n=== 处理结果 ===");
-    console.log(`成功: ${results.success} 个单词`);
-    console.log(`失败: ${results.failed} 个单词`);
-
-    // 显示详细结果
-    console.log("\n=== 详细结果 ===");
-    results.details.forEach((detail) => {
-      if (detail.status === "success") {
-        console.log(`✅ ${detail.word}: 获取到 ${detail.examples} 个例句`);
-      } else {
-        console.log(`❌ ${detail.word}: ${detail.reason}`);
+    //       break;
+    //     }
+    //   } catch (error) {
+    //     console.log(`❌ ${collection} 统计获取失败:`, error.message);
+    //   }
+    //   break;
+    // }
+    for (const collection of collections) {
+      try {
+        await service.batchUpdateCollection(collection);
+      } catch (error) {
+        console.log(`❌ ${collection} 统计获取失败:`, error.message);
       }
-    });
+      break;
+    }
   } catch (error) {
     console.error("执行失败:", error);
   } finally {

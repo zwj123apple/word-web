@@ -1,5 +1,5 @@
-import React from 'react';
-import { Volume2 } from 'lucide-react';
+import React from "react";
+import { Volume2 } from "lucide-react";
 
 const LearnMode = ({ currentWord, speakWord, markFamiliarity }) => {
   if (!currentWord) return null;
@@ -29,7 +29,7 @@ const LearnMode = ({ currentWord, speakWord, markFamiliarity }) => {
           </div>
 
           <div className="text-lg text-blue-600 mb-6">
-            {currentWord.definition}
+            {currentWord.example}
           </div>
 
           <div className="flex flex-wrap justify-center gap-2 mb-8">

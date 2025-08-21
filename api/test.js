@@ -83,7 +83,7 @@ async function testDictionaryService() {
   console.log("测试 DictionaryService 类");
   console.log("=".repeat(50));
 
-  const DictionaryService = require("../services/dictionaryService");
+  const DictionaryService = require("./services/dictionaryService");
   const service = new DictionaryService(
     process.env.MONGODB_URL ||
       "mongodb+srv://test:18QVGiP6oiQbdstd@cluster0.35pzdp4.mongodb.net/word?retryWrites=true&w=majority&appName=Cluster0"
@@ -98,6 +98,7 @@ async function testDictionaryService() {
     for (const collection of collections) {
       try {
         const stats = await service.getCollectionStats(collection);
+
         console.log(`📊 ${collection} 统计:`, stats);
       } catch (error) {
         console.log(`❌ ${collection} 统计获取失败:`, error.message);

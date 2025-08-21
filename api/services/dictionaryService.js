@@ -43,6 +43,7 @@ class DictionaryService {
   }
 
   async fetchWordFromAPI(word) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     try {
       const response = await axios.get(
         `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`,
@@ -71,44 +72,46 @@ class DictionaryService {
       };
     }
 
-    const wordData = data[0];
     const examples = [];
     const definitions = [];
     const phonetics = [];
 
-    // 提取音标
-    wordData.phonetics?.forEach((phon) => {
-      if (phon.text) {
-        phonetics.push({
-          text: phon.text,
-          audio: phon.audio || null,
-        });
-      }
-    });
-
-    // 提取定义和例句
-    wordData.meanings?.forEach((meaning) => {
-      meaning.definitions?.forEach((def) => {
-        if (def.definition) {
-          definitions.push({
-            definition: def.definition,
-            partOfSpeech: meaning.partOfSpeech,
-            synonyms: def.synonyms || [],
-            antonyms: def.antonyms || [],
-          });
-        }
-
-        if (def.example) {
-          examples.push({
-            sentence: def.example,
-            partOfSpeech: meaning.partOfSpeech,
-            source: "dictionary_api",
-            difficulty: this.estimateDifficulty(def.example),
-            length: def.example.length,
+    for (let i = 0; i < data.length; i++) {
+      const wordData = data[i];
+      // 提取音标
+      wordData.phonetics?.forEach((phon) => {
+        if (phon.text) {
+          phonetics.push({
+            text: phon.text,
+            audio: phon.audio || null,
           });
         }
       });
-    });
+
+      // 提取定义和例句
+      wordData.meanings?.forEach((meaning) => {
+        meaning.definitions?.forEach((def) => {
+          if (def.definition) {
+            definitions.push({
+              definition: def.definition,
+              partOfSpeech: meaning.partOfSpeech,
+              synonyms: def.synonyms || [],
+              antonyms: def.antonyms || [],
+            });
+          }
+
+          if (def.example) {
+            examples.push({
+              sentence: def.example,
+              partOfSpeech: meaning.partOfSpeech,
+              source: "dictionary_api",
+              difficulty: this.estimateDifficulty(def.example),
+              length: def.example.length,
+            });
+          }
+        });
+      });
+    }
 
     return {
       word: word.toLowerCase(),
@@ -155,36 +158,24 @@ class DictionaryService {
   async updateWordInDB(collectionName, word, wordData) {
     await this.connect();
     const collection = this.db.collection(collectionName);
-
-    const updateData = {
-      updatedAt: new Date(),
-    };
-
-    if (wordData.found) {
-      updateData.phonetics = wordData.phonetics;
-      updateData.definitions = wordData.definitions;
-      updateData.examples = wordData.examples;
-      updateData.source = wordData.source;
-      updateData.fetchedAt = wordData.fetchedAt;
-      updateData.hasExamples = wordData.examples.length > 0;
-    } else {
-      updateData.fetchError = wordData.error;
-      updateData.hasExamples = false;
+    let sentence = "no example";
+    if (wordData.examples.length > 0) {
+      sentence = wordData.examples[0].sentence;
     }
-
-    await collection.updateOne(
-      { word: word.toLowerCase() },
-      { $set: updateData },
-      { upsert: false } // 不创建新文档，只更新存在的
+    const result = await collection.updateOne(
+      { word: word },
+      { $set: { example: sentence } } // 添加字段 example: "aa"
     );
-
-    return updateData;
+    return result;
   }
 
   async getAllWordsFromCollection(collectionName) {
     await this.connect();
     const collection = this.db.collection(collectionName);
-    return await collection.find({}, { word: 1, _id: 0 }).toArray();
+    return await collection
+      .find({}, { word: 1, _id: 0 })
+      //   .find({ example: "no example" }, { word: 1, _id: 0 })
+      .toArray();
   }
 
   async batchUpdateCollection(collectionName, batchSize = 10, delayMs = 1000) {
@@ -302,6 +293,87 @@ class DictionaryService {
       this.client = null;
       this.db = null;
     }
+  }
+
+  async batchUpdateCollection(collectionName, batchSize = 10, delayMs = 1000) {
+    const words = await this.getAllWordsFromCollection(collectionName);
+    const totalWords = words.length;
+
+    const results = {
+      total: totalWords,
+      processed: 0,
+      success: 0,
+      failed: 0,
+      details: [],
+      startTime: new Date(),
+    };
+
+    console.log(`开始处理 ${collectionName} 集合，共 ${totalWords} 个单词`);
+
+    for (let i = 0; i < words.length; i += batchSize) {
+      const batch = words.slice(i, i + batchSize);
+      const batchNum = Math.floor(i / batchSize) + 1;
+      const totalBatches = Math.ceil(words.length / batchSize);
+
+      console.log(
+        `处理批次 ${batchNum}/${totalBatches}: ${batch
+          .map((w) => w.word)
+          .join(", ")}`
+      );
+
+      await Promise.all(
+        batch.map(async (wordDoc) => {
+          const word = wordDoc.word;
+          try {
+            const wordData = await this.fetchWordFromAPI(word);
+            await this.updateWordInDB(collectionName, word, wordData);
+
+            results.processed++;
+            if (wordData.found && wordData.examples.length > 0) {
+              results.success++;
+              results.details.push({
+                word,
+                status: "success",
+                examples: wordData.examples.length,
+                definitions: wordData.definitions.length,
+              });
+            } else {
+              results.failed++;
+              results.details.push({
+                word,
+                status: "no_data",
+                error: wordData.error || "无例句",
+              });
+            }
+          } catch (error) {
+            results.processed++;
+            results.failed++;
+            results.details.push({
+              word,
+              status: "error",
+              error: error.message,
+            });
+            console.error(`处理单词 ${word} 出错:`, error.message);
+          }
+        })
+      );
+
+      // 进度报告
+      const progress = ((results.processed / totalWords) * 100).toFixed(1);
+      console.log(
+        `进度: ${progress}% (${results.processed}/${totalWords}), 成功: ${results.success}, 失败: ${results.failed}`
+      );
+
+      // 延迟以避免API限制
+      if (i + batchSize < words.length) {
+        await this.delay(delayMs);
+      }
+    }
+
+    results.endTime = new Date();
+    results.duration = results.endTime - results.startTime;
+
+    return results;
   }
 }
 
