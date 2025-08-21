@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const serverless = require("serverless-http");
 
 const app = express();
 
@@ -26,12 +27,7 @@ const connectDB = async () => {
     console.log("MongoDB连接成功，数据库名称：", dbConnection.connection.name);
     return dbConnection;
   } catch (err) {
-    console.error(
-      "MongoDB连接失败（详细错误）:",
-      err.message,
-      "错误码:",
-      err.code
-    );
+    console.error("MongoDB连接失败:", err.message, "错误码:", err.code);
     throw err;
   }
 };
@@ -49,20 +45,17 @@ app.get("/api/word-data", async (req, res) => {
     // 确保数据库已连接
     await connectDB();
 
-    // 解析并验证参数
     const { bank, page = 1, limit = 100 } = req.query;
     if (!bank) {
       return res.status(400).json({ error: "bank参数是必需的" });
     }
 
-    // 验证分页参数为数字
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
     if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
       return res.status(400).json({ error: "page和limit必须是正整数" });
     }
 
-    // 缓存逻辑
     const cacheKey = `${bank}-${pageNum}-${limitNum}`;
     if (cache[cacheKey]) {
       return res.status(200).json({
@@ -80,7 +73,6 @@ app.get("/api/word-data", async (req, res) => {
       return res.status(404).json({ error: `集合 ${bank} 不存在` });
     }
 
-    // 执行查询
     const collection = mongoose.connection.collection(bank);
     const result = await collection
       .find({})
@@ -88,13 +80,11 @@ app.get("/api/word-data", async (req, res) => {
       .limit(limitNum)
       .toArray();
 
-    // 设置缓存
     cache[cacheKey] = result;
     setTimeout(() => {
       delete cache[cacheKey];
-    }, 0); // 1小时缓存
+    }, 3600 * 1000); // 缓存1小时
 
-    // 返回结果
     res.status(200).json({
       data: result,
       pagination: {
@@ -106,7 +96,6 @@ app.get("/api/word-data", async (req, res) => {
     });
   } catch (error) {
     console.error("获取数据失败:", error);
-    // 确保错误时有响应
     res.status(500).json({
       error: "服务器内部错误",
       message:
@@ -115,7 +104,7 @@ app.get("/api/word-data", async (req, res) => {
   }
 });
 
-// 本地开发启动
+// 本地开发时启动 Express
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => {
@@ -123,4 +112,5 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-module.exports = app;
+// Vercel 需要导出为 serverless function
+module.exports = serverless(app);
