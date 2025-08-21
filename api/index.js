@@ -19,7 +19,15 @@ const connectDB = async () => {
   }
   try {
     console.log("开始连接数据库...");
-    dbConnection = await mongoose.connect(process.env.MONGODB_URI, {
+    const uri = process.env.MONGODB_URI;
+    console.log("uri:", uri);
+    if (
+      !uri ||
+      (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://"))
+    ) {
+      throw new Error("MongoDB URI 格式错误或未配置");
+    }
+    dbConnection = await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 5000, // 缩短超时时间，快速暴露问题
       bufferCommands: false, // 禁用命令缓冲
     });
