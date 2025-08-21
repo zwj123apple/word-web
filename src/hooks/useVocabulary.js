@@ -52,13 +52,15 @@ export const useVocabulary = () => {
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
-      const data = await response.json();
+      const responseData = await response.json();
+      const data = Array.isArray(responseData.data) ? responseData.data : [];
       if (data.length === 0) {
         setHasMore(false);
       }
       setWords((prevWords) =>
         page === 1 ? shuffleArray(data) : shuffleArray([...prevWords, ...data])
       );
+      console.log(words);
     } catch (error) {
       console.error("Error fetching word data:", error);
       setError(error);

@@ -3,57 +3,112 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const Data = require("./data.js");
 
 const app = express();
 
-// 中间件（保持简单，确保跨域和JSON解析正常）
-app.use(cors()); // 本地和Vercel都允许跨域（生产环境可后续收紧）
+// 中间件
+app.use(cors());
 app.use(express.json());
 
-// 数据库连接（关键：确保Vercel环境能读到MONGODB_URI）
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log("MongoDB连接成功"))
-  .catch((err) => console.error("MongoDB连接失败:", err));
+// 数据库连接优化 - 避免重复连接
+let dbConnection;
+const connectDB = async () => {
+  if (dbConnection) return dbConnection;
+  try {
+    dbConnection = await mongoose.connect(process.env.MONGODB_URI);
+    console.log("MongoDB连接成功");
+    return dbConnection;
+  } catch (err) {
+    console.error("MongoDB连接失败:", err);
+    throw err; // 抛出错误让路由处理
+  }
+};
 
-// API路由（路径必须正确，Vercel会映射到根域名下的/api）
+// 健康检查路由
 app.get("/api", (req, res) => {
   res.send("API正常运行");
 });
 
-// 你的核心数据接口（路径为/api/data，与前端请求对应）
-app.get("/api/data", async (req, res) => {
+const cache = {};
+
+// 核心数据接口
+app.get("/api/word-data", async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 30;
-    const sourceFile = req.query.source;
+    // 确保数据库已连接
+    await connectDB();
 
-    const query = sourceFile ? { source: sourceFile } : {};
-    const skip = (page - 1) * limit;
+    // 解析并验证参数
+    const { bank, page = 1, limit = 100 } = req.query;
+    if (!bank) {
+      return res.status(400).json({ error: "bank参数是必需的" });
+    }
 
-    const data = await Data.find(query).skip(skip).limit(limit);
-    const total = await Data.countDocuments(query);
+    // 验证分页参数为数字
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
+      return res.status(400).json({ error: "page和limit必须是正整数" });
+    }
 
+    // 缓存逻辑
+    const cacheKey = `${bank}-${pageNum}-${limitNum}`;
+    if (cache[cacheKey]) {
+      return res.status(200).json({
+        data: cache[cacheKey],
+        fromCache: true,
+      });
+    }
+
+    // 验证集合是否存在
+    const collectionNames = await mongoose.connection.db
+      .listCollections()
+      .toArray();
+    const collectionExists = collectionNames.some((col) => col.name === bank);
+    if (!collectionExists) {
+      return res.status(404).json({ error: `集合 ${bank} 不存在` });
+    }
+
+    // 执行查询
+    const collection = mongoose.connection.collection(bank);
+    const result = await collection
+      .find({})
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
+      .toArray();
+
+    // 设置缓存
+    cache[cacheKey] = result;
+    setTimeout(() => {
+      delete cache[cacheKey];
+    }, 3600000); // 1小时缓存
+
+    // 返回结果
     res.status(200).json({
-      data,
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
+      data: result,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: await collection.countDocuments(),
+      },
+      fromCache: false,
     });
   } catch (error) {
-    res.status(500).json({ message: "获取数据失败", error: error.message });
+    console.error("获取数据失败:", error);
+    // 确保错误时有响应
+    res.status(500).json({
+      error: "服务器内部错误",
+      message:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 });
 
-// 本地开发启动服务（Vercel会自动忽略，用自己的端口）
+// 本地开发启动
 if (process.env.NODE_ENV !== "production") {
-  const PORT = 3001;
+  const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => {
     console.log(`本地服务运行在 http://localhost:${PORT}`);
   });
 }
 
-// 导出供Vercel使用（必须导出app，Vercel会处理请求）
 module.exports = app;
