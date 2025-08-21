@@ -3,7 +3,6 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const serverless = require("serverless-http");
 
 const app = express();
 
@@ -33,14 +32,14 @@ const connectDB = async () => {
 };
 
 // 健康检查路由
-app.get("/api", (req, res) => {
-  res.send("API正常运行");
-});
+// app.get("/api", (req, res) => {
+//   res.send("API正常运行");
+// });
 
 const cache = {};
 
 // 核心数据接口
-app.get("/api/word-data", async (req, res) => {
+app.get("/api", async (req, res) => {
   try {
     // 确保数据库已连接
     await connectDB();
@@ -113,4 +112,4 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Vercel 需要导出为 serverless function
-module.exports = serverless(app);
+module.exports = app;

@@ -47,7 +47,7 @@ export const useVocabulary = () => {
     try {
       const API_BASE_URL = "/api";
       const response = await fetch(
-        `${API_BASE_URL}/word-data?bank=${bank}&page=${page}&limit=${limit}`
+        `${API_BASE_URL}?bank=${bank}&page=${page}&limit=${limit}`
       );
       if (!response.ok) {
         throw new Error("Network response was not ok");
