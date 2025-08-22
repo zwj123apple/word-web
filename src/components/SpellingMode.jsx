@@ -9,6 +9,7 @@ const SpellingMode = ({
   setShowAnswer,
   nextWord,
   speakWord,
+  recordAnswer,
 }) => {
   if (!currentWord) return null;
 
@@ -65,7 +66,11 @@ const SpellingMode = ({
           <div className="flex gap-4 justify-center">
             {!showAnswer ? (
               <button
-                onClick={() => setShowAnswer(true)}
+                onClick={() => {
+                  setShowAnswer(true);
+                  const isCorrect = userAnswer.toLowerCase() === currentWord.word.toLowerCase();
+                  recordAnswer(isCorrect);
+                }}
                 className="px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
               >
                 检查答案

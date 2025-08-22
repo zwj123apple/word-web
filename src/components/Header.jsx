@@ -28,10 +28,12 @@ const Header = ({ studyStats, dailyGoal, currentMode, setCurrentMode }) => {
                 <Trophy className="w-4 h-4" />
                 <span>连续: {studyStats.streakDays}天</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Star className="w-4 h-4" />
-                <span>正确率: {studyStats.accuracy}%</span>
-              </div>
+              {currentMode !== 'learn' && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Star className="w-4 h-4" />
+                  <span>正确率: {studyStats.accuracy}%</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

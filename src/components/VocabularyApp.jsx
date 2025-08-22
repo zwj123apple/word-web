@@ -33,6 +33,7 @@ const VocabularyApp = () => {
     currentWord,
     speakWord,
     handleAnswerSubmit,
+    recordAnswer,
     nextWord,
     markFamiliarity,
     wordBanks,
@@ -122,6 +123,7 @@ const VocabularyApp = () => {
             setShowAnswer={setShowAnswer}
             nextWord={nextWord}
             speakWord={speakWord}
+            recordAnswer={recordAnswer}
           />
         )}
         <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />

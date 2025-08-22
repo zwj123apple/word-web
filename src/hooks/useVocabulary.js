@@ -30,11 +30,12 @@ export const useVocabulary = () => {
   const [userAnswer, setUserAnswer] = useState("");
   const [showAnswer, setShowAnswer] = useState(false);
   const [studyStats, setStudyStats] = useState({
-    todayLearned: 12,
-    todayReviewed: 8,
-    totalWords: 156,
-    streakDays: 7,
-    accuracy: 85,
+    todayLearned: 0,
+    todayReviewed: 0,
+    streakDays: 1, // This is hardcoded for now
+    accuracy: 100,
+    totalCorrect: 0,
+    totalAnswered: 0,
   });
   const [quizOptions, setQuizOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -81,8 +82,6 @@ export const useVocabulary = () => {
     fetchWords(selectedBank, page, debouncedDailyGoal);
   }, [page, selectedBank, debouncedDailyGoal, fetchWords]);
 
-  
-
   const currentWord = words[currentWordIndex] || words[0];
 
   const speakWord = useCallback((text) => {
@@ -107,11 +106,33 @@ export const useVocabulary = () => {
     setQuizOptions(options.sort(() => Math.random() - 0.5));
   }, [currentWord, words]);
 
+  const recordAnswer = (isCorrect) => {
+    setStudyStats((prev) => {
+      const newTotalAnswered = prev.totalAnswered + 1;
+      const newTotalCorrect = isCorrect
+        ? prev.totalCorrect + 1
+        : prev.totalCorrect;
+      const newAccuracy =
+        newTotalAnswered > 0
+          ? Math.round((newTotalCorrect / newTotalAnswered) * 100)
+          : 100;
+
+      return {
+        ...prev,
+        totalAnswered: newTotalAnswered,
+        totalCorrect: newTotalCorrect,
+        accuracy: newAccuracy,
+        todayReviewed: prev.todayReviewed + 1,
+      };
+    });
+  };
+
   const handleAnswerSubmit = (answer) => {
     setSelectedOption(answer);
     setShowResult(true);
 
-    const isCorrect = answer === currentWord.definition;
+    const isCorrect = answer === currentWord.translation;
+    recordAnswer(isCorrect);
 
     setWords((prev) =>
       prev.map((w) =>
@@ -125,15 +146,6 @@ export const useVocabulary = () => {
           : w
       )
     );
-
-    setStudyStats((prev) => ({
-      ...prev,
-      todayLearned:
-        currentMode === "learn" ? prev.todayLearned + 1 : prev.todayLearned,
-      todayReviewed:
-        currentMode === "quiz" ? prev.todayReviewed + 1 : prev.todayReviewed,
-      accuracy: Math.round(prev.accuracy * 0.9 + (isCorrect ? 10 : 0)),
-    }));
   };
 
   const nextWord = () => {
@@ -190,6 +202,7 @@ export const useVocabulary = () => {
     currentWord,
     speakWord,
     handleAnswerSubmit,
+    recordAnswer,
     nextWord,
     markFamiliarity,
     wordBanks,
