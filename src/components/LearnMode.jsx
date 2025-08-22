@@ -28,8 +28,10 @@ const LearnMode = ({ currentWord, speakWord, markFamiliarity }) => {
             {currentWord.translation}
           </div>
 
-          <div className="text-lg text-blue-600 mb-6">
-            {currentWord.example}
+          <div className="bg-gray-50 rounded-2xl p-6 mb-6">
+            <p className="text-gray-600 text-center italic text-lg">
+              {currentWord.example}
+            </p>
           </div>
 
           <div className="flex flex-wrap justify-center gap-2 mb-8">
